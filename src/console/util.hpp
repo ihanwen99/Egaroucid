@@ -14,12 +14,23 @@
 #include <iomanip>
 #include <sstream>
 #include <vector>
+#include <ctime>
+#include <algorithm>
+
+/// Cross-platform localtime function
+inline void safeLocalTime(const time_t* timep, std::tm* result) {
+#ifdef _WIN32
+    localtime_s(result, timep);  // Windows version
+#else
+    localtime_r(timep, result);  // POSIX version (Linux/macOS)
+#endif
+}
 
 std::string get_current_datetime() {
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
-    std::tm tm;
-    localtime_s(&tm, &in_time_t);
+    std::tm tm{};
+    safeLocalTime(&in_time_t, &tm);
     std::stringstream ss;
     ss << std::put_time(&tm, "%Y-%m-%d %X");
     return ss.str();
@@ -28,8 +39,8 @@ std::string get_current_datetime() {
 std::string get_current_datetime_for_file() {
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
-    std::tm tm;
-    localtime_s(&tm, &in_time_t);
+    std::tm tm{};
+    safeLocalTime(&in_time_t, &tm);
     std::stringstream ss;
     ss << std::put_time(&tm, "%Y-%m-%d-%H=%M=%S");
     return ss.str();
@@ -49,13 +60,13 @@ std::vector<std::string> split_by_delimiter(const std::string &str, const std::s
     std::vector<std::string> tokens;
     size_t start = 0;
     size_t end = str.find(delimiter);
-    
+
     while (end != std::string::npos) {
         tokens.push_back(str.substr(start, end - start));
         start = end + delimiter.length();
         end = str.find(delimiter, start);
     }
-    
+
     tokens.push_back(str.substr(start));
     return tokens;
 }
